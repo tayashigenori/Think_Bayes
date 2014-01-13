@@ -95,13 +95,13 @@ def try_n_times(strategy, n = 10000, debug = False):
     hit_kaisuu = 0
     for i in range(n):
         mh = MontyHall(doors_num = 3)
-        # select one of the doors
+        # 回答者がドアを選ぶ
         mh.select_door()
-        # monty opens one of the doors
+        # モンティが外れのドアを開ける
         mh.monty_opens_door()
-        # select stick_or_switch
+        # 回答者がいまのドアのまま(STICK)か変更する(SWITCH)かを選ぶ
         mh.stick_or_switch(strategy)
-        # open!!
+        # 正解発表！
         result = mh.open_answer()
         hit_kaisuu += result
     return hit_kaisuu
