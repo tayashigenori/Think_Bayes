@@ -4,71 +4,155 @@
 import sys
 from random import choice
 
-STRATEGY_STICK  = 1
-STRATEGY_SWITCH = 2
-
-class MontyHall:
+class Door:
     DOOR_CLOSED   = 0
-    DOOR_OPENED   = 1
+    DOOR_OPEN     = 1
     DOOR_SELECTED = 2
 
-    def __init__(self, doors_num = 3, answer = None):
-        self.initialze_doors(doors_num)
-        self.set_answer(answer)
-        # for debug
-        self.doors_status = {
-            self.DOOR_CLOSED: 'closed',
-            self.DOOR_OPENED: 'opened',
-            self.DOOR_SELECTED: 'selected',
+    def __init__(self, status = None):
+        if status == None:
+            status = self.DOOR_CLOSED
+        self.__status = status
+        self.__is_hit = False
+        return
+
+    def get_status(self, status):
+        return self.__status
+    def __set_status(self, status):
+        self.__status = status
+        return
+    def close(self,):
+        self.__set_status(self.DOOR_CLOSED)
+        return
+    def open(self,):
+        self.__set_status(self.DOOR_OPEN)
+        return
+    def select(self,):
+        self.__set_status(self.DOOR_SELECTED)
+        return
+
+    def __is_status(self, status):
+        return self.__status == status
+    def is_closed(self,):
+        return self.__is_status(self.DOOR_CLOSED)
+    def is_open(self,):
+        return self.__is_status(self.DOOR_OPEN)
+    def is_selected(self,):
+        return self.__is_status(self.DOOR_SELECTED)
+
+    def set_hit(self,):
+        self.__is_hit = True
+        return
+    def unset_hit(self,):
+        self.__is_hit = False
+        return
+    def is_hit(self,):
+        return self.__is_hit == True
+
+    def get_status_str(self,):
+        door_status = {
+            self.DOOR_CLOSED: "閉じ\t\t|",
+            self.DOOR_OPEN: "開き\t\t|",
+            self.DOOR_SELECTED: "選\t→\t|",
         }
+        return door_status[self.__status]
+    def get_hit_str(self,):
+        is_hit = {
+            True: "■当たり",
+            False: "□はずれ",
+        }
+        return is_hit[self.__is_hit]
+
+class Doors:
+    def __init__(self, doors_num = 3):
+        self.__list = self.initialize_doors(doors_num)
+        self.__hit = self.set_hit()
         return
-    def initialze_doors(self, doors_num):
-        self.doors = {}
-        for i in range(doors_num):
-            self.doors[i] = self.DOOR_CLOSED
+    def initialize_doors(self, doors_num):
+        l = []
+        for d_int in range(doors_num):
+            l.append(Door())
+        return l
+
+    def get_all_doors(self,):
+        return self.__list
+    def get_closed_doors(self,):
+        return [d_obj for d_obj in self.__list if d_obj.is_closed()]
+    def get_open_doors(self,):
+        return [d_obj for d_obj in self.__list if d_obj.is_open()]
+    def get_selected_doors(self,):
+        return [d_obj for d_obj in self.__list if d_obj.is_selected()]
+
+    def get_closed_door(self,):
+        doors = self.get_closed_doors()
+        if len(doors) != 1:
+            raise Exception("there has to be one door closed, current_doors: %s"
+                            %[d_obj.get_status_str() for d_obj in self.__list])
+        return doors[0]
+    def get_open_door(self,):
+        doors = self.get_open_doors()
+        if len(doors) != 1:
+            raise Exception("there has to be one door open, current_doors: %s"
+                            %[d_obj.get_status_str() for d_obj in self.__list])
+        return doors[0]
+    def get_selected_door(self,):
+        doors = self.get_selected_doors()
+        if len(doors) != 1:
+            raise Exception("there has to be one door selected, current_doors: %s"
+                            %[d_obj.get_status_str() for d_obj in self.__list])
+        return doors[0]
+
+    def set_hit(self, hit = None):
+        if hit == None:
+            hit = choice(self.__list)
+        return hit.set_hit()
+
+class MontyHallProblem:
+    STRATEGY_STICK  = 1
+    STRATEGY_SWITCH = 2
+
+    def __init__(self, doors_obj):
+        self.__doors = doors_obj
         return
-    def set_answer(self, answer = None):
-        if answer == None:
-            answer = choice(self.doors.keys())
-        self.answer = answer
+    def set_strategy_stick(self,):
+        self.__strategy = self.STRATEGY_STICK
+        return
+    def set_strategy_switch(self,):
+        self.__strategy = self.STRATEGY_SWITCH
         return
     """
     1. 回答者がドアを選ぶ
     """
-    def select_door(self, target_door = None):
-        for door,status in self.doors.items():
-            if status != self.DOOR_CLOSED:
+    def select_door(self, target_door_int = None):
+        for door_obj in self.__doors.get_all_doors():
+            if door_obj.is_closed() == False:
                 raise Exception("all doors have to be cloesd here!!")
 
-        if target_door == None:
-            target_door = choice(self.doors.keys())
-        self.doors[target_door] = self.DOOR_SELECTED
-        return
-
+        target_door_obj = choice(self.__doors.get_all_doors())
+        if isinstance(target_door_int, int):
+            target_door_obj = self.__doors.get_all_doors()[target_door_int]
+        return target_door_obj.select()
     """
     2. Monty が外れのドアを開ける
     """
     def monty_opens_door(self,):
-        candidate_doors = [door for door in self.get_doors(self.DOOR_CLOSED) if door != self.answer]
-        open_door = choice(candidate_doors)
-        self.doors[open_door] = self.DOOR_OPENED
-        return
-
+        candidate_doors = [door_obj for door_obj in self.__doors.get_closed_doors()
+                           if door_obj.is_hit() == False]
+        target_door_obj = choice(candidate_doors)
+        return target_door_obj.open()
     """
     3. 回答者がドアを変更するかどうかを選ぶ
     """
-    def stick_or_switch(self, strategy):
-        if strategy == STRATEGY_STICK:
+    def stick_or_switch(self,):
+        if self.__strategy == self.STRATEGY_STICK:
             return
-        if strategy == STRATEGY_SWITCH:
-            # get selected door
-            selected_door = self.get_door(self.DOOR_SELECTED)
-            # get closed door
-            closed_door = self.get_door(self.DOOR_CLOSED)
+        if self.__strategy == self.STRATEGY_SWITCH:
+            selected_door_obj = self.__doors.get_selected_door()
+            closed_door_obj = self.__doors.get_closed_door()
             # set selected door to closed
-            self.doors[selected_door] = self.DOOR_CLOSED
+            selected_door_obj.close()
             # set closed door to selected
-            self.doors[closed_door] = self.DOOR_SELECTED
+            closed_door_obj.select()
             return
         raise Exception("unknown strategy!!")
 
@@ -76,42 +160,43 @@ class MontyHall:
     4. 正解を発表する
     """
     def open_answer(self,):
-        return self.get_door(self.DOOR_SELECTED) == self.answer
+        return self.__doors.get_selected_door().is_hit()
+    def show_results(self,):
+        for door_obj in self.__doors.get_all_doors():
+            sys.stderr.write("%s" %door_obj.get_status_str())
+            if door_obj.is_hit():
+                sys.stderr.write("%s" %door_obj.get_hit_str())
+            sys.stderr.write("\n")
+        sys.stderr.write("------------\n")
 
-    """
-    Helper 関数
-    """
-    def get_doors(self, target_status):
-        return [door for door,status in self.doors.items() if status == target_status]
-    def get_door(self, target_status):
-        doors = self.get_doors(target_status)
-        if len(doors) != 1:
-            raise Exception("there has to be one door %s, current_doors: %s"
-                            %(self.doors_status[target_status],
-                              [(door,self.doors_status[status]) for door,status in self.doors.items()]))
-        return doors[0]
-
-def try_n_times(strategy, n = 10000, debug = False):
+def try_n_times(strategy_stick = False, n = 10000, debug = False):
     hit_kaisuu = 0
     for i in range(n):
-        mh = MontyHall(doors_num = 3)
+        doors_obj = Doors(doors_num = 3)
+        mh = MontyHallProblem(doors_obj)
         # 回答者がドアを選ぶ
         mh.select_door()
         # モンティが外れのドアを開ける
         mh.monty_opens_door()
         # 回答者がいまのドアのまま(STICK)か変更する(SWITCH)かを選ぶ
-        mh.stick_or_switch(strategy)
+        if strategy_stick:
+            mh.set_strategy_stick()
+        else:
+            mh.set_strategy_switch()
+        mh.stick_or_switch()
         # 正解発表！
         result = mh.open_answer()
+        if debug == True:
+            mh.show_results()
         hit_kaisuu += result
     return hit_kaisuu
 
 def main():
     n = 10000
-    hit_kaisuu = try_n_times(STRATEGY_STICK, n)
+    hit_kaisuu = try_n_times(strategy_stick = True, n = 10000, debug = False)
     sys.stdout.write(u"STICK 戦略でのヒット回数: %d\n" %(hit_kaisuu))
 
-    hit_kaisuu = try_n_times(STRATEGY_SWITCH, n)
+    hit_kaisuu = try_n_times(strategy_stick = False, n = 10000, debug = False)
     sys.stdout.write(u"SWITCH 戦略でのヒット回数: %d\n" %(hit_kaisuu))
 
 if __name__ == '__main__':
