@@ -53,7 +53,7 @@ class Door:
         door_status = {
             self.DOOR_CLOSED: "閉じ\t\t|",
             self.DOOR_OPEN: "開き\t\t|",
-            self.DOOR_SELECTED: "選\t→\t|",
+            self.DOOR_SELECTED: "選\t-->\t|",
         }
         return door_status[self.__status]
     def get_hit_str(self,):
@@ -193,11 +193,11 @@ def try_n_times(strategy_stick = False, n = 10000, debug = False):
 
 def main():
     n = 10000
-    hit_kaisuu = try_n_times(strategy_stick = True, n = 10000, debug = False)
-    sys.stdout.write(u"STICK 戦略でのヒット回数: %d\n" %(hit_kaisuu))
+    hit_kaisuu = try_n_times(strategy_stick = True, n = 10000, debug = True)
+    sys.stdout.write("STICK 戦略でのヒット回数: %d\n" %(hit_kaisuu))
 
-    hit_kaisuu = try_n_times(strategy_stick = False, n = 10000, debug = False)
-    sys.stdout.write(u"SWITCH 戦略でのヒット回数: %d\n" %(hit_kaisuu))
+    hit_kaisuu = try_n_times(strategy_stick = False, n = 10000, debug = True)
+    sys.stdout.write("SWITCH 戦略でのヒット回数: %d\n" %(hit_kaisuu))
 
 if __name__ == '__main__':
     main()
